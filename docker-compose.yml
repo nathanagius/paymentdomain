@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: paymentuser
+      POSTGRES_PASSWORD: paymentpass
+      POSTGRES_DB: paymentdb
+    ports:
+      - '5432:5432'
+    volumes:
+      - paymentdata:/var/lib/postgresql/data
+
+  payment-initiation:
+    build:
+      context: ./backend/payment-initiation
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: paymentuser
+      DB_PASSWORD: paymentpass
+      DB_NAME: paymentdb
+    depends_on:
+      - db
+    ports:
+      - '4000:4000'
+
+  customer-mock:
+    build:
+      context: ./backend/customer-mock
+    ports:
+      - '4001:4001'
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - payment-initiation
+      - customer-mock
+
+  test-runner:
+    build:
+      context: .
+    command: npm run test:api
+    depends_on:
+      - frontend
+      - payment-initiation
+      - customer-mock
+      - db
+    environment:
+      - CUSTOMER_API_URL=http://customer-mock:4001
+      - PAYMENT_API_URL=http://payment-initiation:4000/api
+
+volumes:
+  paymentdata:
