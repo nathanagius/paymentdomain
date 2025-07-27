@@ -1,0 +1,256 @@
+openapi: 3.0.3
+info:
+  title: Payment Initiation API (BIAN-aligned)
+  version: 1.0.0
+  description: >
+    BIAN-aligned Payment Initiation API for UK retail banking, including customer/account mock service.
+
+servers:
+  - url: http://localhost:4000
+
+paths:
+  /payment-initiations:
+    post:
+      summary: Initiate a payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInitiationRequest'
+      responses:
+        '201':
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitiationResponse'
+        '400':
+          description: Business rule violation or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: List all payment initiations
+      responses:
+        '200':
+          description: List of payment initiations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentInitiationDetails'
+
+  /payment-initiations/{id}:
+    get:
+      summary: Get payment initiation by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Payment initiation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitiationDetails'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payment-initiations/{id}/execute:
+    post:
+      summary: Execute the payment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Payment executed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentExecutionResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /payment-initiations/{id}/notify:
+    post:
+      summary: Notify about payment status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Notification acknowledged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Notification received
+
+# Customer Mock API
+  /customers:
+    get:
+      summary: List customers
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+
+  /customers/{id}:
+    get:
+      summary: Get customer by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /accounts:
+    get:
+      summary: List accounts for a customer
+      parameters:
+        - in: query
+          name: customerId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+
+components:
+  schemas:
+    PaymentInitiationRequest:
+      type: object
+      required: [debtorAccount, creditorAccount, amount, currency]
+      properties:
+        debtorAccount:
+          $ref: '#/components/schemas/Account'
+        creditorAccount:
+          $ref: '#/components/schemas/Account'
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+          example: GBP
+        reference:
+          type: string
+        requestedExecutionDate:
+          type: string
+          format: date
+
+    PaymentInitiationResponse:
+      type: object
+      properties:
+        paymentInitiationId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+        creationDate:
+          type: string
+          format: date-time
+
+    PaymentInitiationDetails:
+      allOf:
+        - $ref: '#/components/schemas/PaymentInitiationRequest'
+        - type: object
+          properties:
+            paymentInitiationId:
+              type: string
+            status:
+              type: string
+              enum: [PENDING, COMPLETED, FAILED]
+            creationDate:
+              type: string
+              format: date-time
+
+    PaymentExecutionResponse:
+      type: object
+      properties:
+        paymentInitiationId:
+          type: string
+        status:
+          type: string
+          enum: [COMPLETED]
+        executionDate:
+          type: string
+          format: date-time
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        type:
+          type: string
+        iban:
+          type: string
+        balance:
+          type: number
+        currency:
+          type: string
+        accountId:
+          type: string
+        accountType:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string 

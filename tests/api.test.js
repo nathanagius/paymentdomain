@@ -40,6 +40,7 @@ describe('Payment Initiation API (BIAN)', () => {
         accountId: 'acc1',
         accountType: 'Current',
         iban: 'GB00CUST1000000001',
+        customerId: 'cust1',
       },
       creditorAccount: {
         accountId: 'acc3',
@@ -89,9 +90,9 @@ describe('Payment Initiation API (BIAN)', () => {
   it('should reject payment if insufficient funds', async () => {
     await expect(
       axios.post(`${PAYMENT_API}/payment-initiations`, {
-        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001' },
+        debtorAccount: { accountId: 'acc2', accountType: 'Savings', iban: 'GB00CUST1000000002', customerId: 'cust1' },
         creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
-        amount: 2000, // Exceeds mock balance of 1000
+        amount: 500, // Above acc2 balance of 400
         currency: 'GBP',
       })
     ).rejects.toMatchObject({ response: { status: 400, data: { error: 'Insufficient funds' } } });
@@ -100,7 +101,7 @@ describe('Payment Initiation API (BIAN)', () => {
   it('should reject payment if exceeds single payment limit', async () => {
     await expect(
       axios.post(`${PAYMENT_API}/payment-initiations`, {
-        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001' },
+        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001', customerId: 'cust1' },
         creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
         amount: 600, // Exceeds single payment limit of 500
         currency: 'GBP',
@@ -111,9 +112,9 @@ describe('Payment Initiation API (BIAN)', () => {
   it('should reject payment if exceeds daily limit', async () => {
     await expect(
       axios.post(`${PAYMENT_API}/payment-initiations`, {
-        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001' },
+        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001', customerId: 'cust1' },
         creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
-        amount: 2500, // Exceeds daily limit of 2000
+        amount: 2500, // Exceeds daily limit of 2000, below acc1 balance
         currency: 'GBP',
       })
     ).rejects.toMatchObject({ response: { status: 400, data: { error: 'Exceeds daily payment limit' } } });
@@ -122,7 +123,7 @@ describe('Payment Initiation API (BIAN)', () => {
   it('should reject payment if not eligible for Faster Payments', async () => {
     await expect(
       axios.post(`${PAYMENT_API}/payment-initiations`, {
-        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001' },
+        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001', customerId: 'cust1' },
         creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
         amount: 100,
         currency: 'USD', // Not GBP
@@ -133,11 +134,22 @@ describe('Payment Initiation API (BIAN)', () => {
   it('should reject payment flagged as potentially fraudulent', async () => {
     await expect(
       axios.post(`${PAYMENT_API}/payment-initiations`, {
-        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001' },
+        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001', customerId: 'cust1' },
         creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
-        amount: 20000, // Over fraud threshold
+        amount: 12000, // Over fraud threshold, below acc1 balance
         currency: 'GBP',
       })
     ).rejects.toMatchObject({ response: { status: 400, data: { error: 'Payment flagged as potentially fraudulent' } } });
+  }, 30000);
+
+  it('should reject payment if amount exceeds actual account balance (realistic funds check)', async () => {
+    await expect(
+      axios.post(`${PAYMENT_API}/payment-initiations`, {
+        debtorAccount: { accountId: 'acc1', accountType: 'Current', iban: 'GB00CUST1000000001', customerId: 'cust1' },
+        creditorAccount: { accountId: 'acc3', accountType: 'Current', iban: 'GB00CUST2000000001' },
+        amount: 1300, // Exceeds acc1 balance of 1200.50
+        currency: 'GBP',
+      })
+    ).rejects.toMatchObject({ response: { status: 400, data: { error: 'Insufficient funds' } } });
   }, 30000);
 }); 

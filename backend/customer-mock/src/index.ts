@@ -13,8 +13,8 @@ const customers = [
 ];
 
 const accounts = [
-  { id: 'acc1', customerId: 'cust1', type: 'Current', iban: 'GB00CUST1000000001', balance: 1200.50, currency: 'GBP' },
-  { id: 'acc2', customerId: 'cust1', type: 'Savings', iban: 'GB00CUST1000000002', balance: 5000.00, currency: 'GBP' },
+  { id: 'acc1', customerId: 'cust1', type: 'Current', iban: 'GB00CUST1000000001', balance: 15000.00, currency: 'GBP' },
+  { id: 'acc2', customerId: 'cust1', type: 'Savings', iban: 'GB00CUST1000000002', balance: 400.00, currency: 'GBP' },
   { id: 'acc3', customerId: 'cust2', type: 'Current', iban: 'GB00CUST2000000001', balance: 800.00, currency: 'GBP' },
 ];
 

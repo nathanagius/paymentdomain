@@ -51,7 +51,7 @@ services:
       - db
     environment:
       - CUSTOMER_API_URL=http://customer-mock:4001
-      - PAYMENT_API_URL=http://payment-initiation:4000/api
+      - PAYMENT_API_URL=http://payment-initiation:4000
 
 volumes:
   paymentdata:
