@@ -8,7 +8,7 @@ import paymentController from './api/paymentController';
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/api', paymentController);
+app.use(paymentController);
 
 const PORT = process.env.PORT || 4000;
 
